@@ -1,0 +1,16 @@
+package com.ApiRest.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.ApiRest.entity.Promotor;
+import com.ApiRest.entity.User;
+
+public interface UserRepo extends JpaRepository<User, Long> {
+
+	@Query("SELECT id FROM User WHERE USERNAME=:USERNAME AND PWD=:PWD")
+	Long Login(@Param("USERNAME") String USERNAME, @Param("PWD") String PWD);
+}

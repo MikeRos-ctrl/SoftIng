@@ -1,0 +1,305 @@
+package com.ApiRest.controller;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.ApiRest.dao.*;
+import com.ApiRest.entity.*;
+
+import jakarta.validation.Valid;
+
+@CrossOrigin(origins = { "*" })
+@RestController
+@RequestMapping("/api")
+public class Controller {
+
+	@Autowired
+	private IPersona personaService;
+
+	@Autowired
+	private IPromotor promotorService;
+
+	@Autowired
+	private ICuenta cuentaService;
+
+	@Autowired
+	private ISucursal sucursalService;
+
+	@Autowired
+	private ITelefono telefonoService;
+
+	@Autowired
+	private ICodigoPostal codigoService;
+
+	@Autowired
+	private IColonia coloniaService;
+
+	@Autowired
+	private IDomicilio domicilioService;
+
+	@Autowired
+	private IUser userService;
+
+	private final Logger log = LoggerFactory.getLogger(Controller.class);
+
+	@PostMapping("/save")
+
+	public ResponseEntity<?> CreateUser(@Valid @RequestParam("USERNAME") String USERNAME, @RequestParam("PWD") String PWD) {
+
+		Map<String, Object> response = new HashMap<>();
+		Cuenta nuevaCuenta;
+		HttpStatus status;
+
+		try {
+
+	
+
+				userService.save(new User(null, USERNAME, PWD));
+				response.put("Mensaje", "Cuenta creada con exito!");
+				status = HttpStatus.OK;
+			
+
+		} catch (Exception e) {
+
+			response.put("Mensaje", "Error interno");
+			response.put("Error", e.getMessage());
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+
+		return new ResponseEntity<Map<String, Object>>(response, status);
+	}
+
+	@PutMapping("/dummy2")
+	public ResponseEntity<?> dummy2(@RequestParam("filePath") MultipartFile file) {
+		String originalFilename = file.getOriginalFilename();
+		long fileSize = file.getSize();
+
+		System.out.println("Received file: " + originalFilename + " (" + fileSize + " bytes)");
+
+		return ResponseEntity.status(HttpStatus.OK).build();
+	}
+
+	@PostMapping("/persona")
+	public ResponseEntity<?> CreatePersona(@Valid @RequestBody Persona persona, BindingResult result) {
+
+		Map<String, Object> response = new HashMap<>();
+		Persona personita;
+		HttpStatus status;
+
+		try {
+
+			if (result.hasErrors()) {
+				List<String> errors = new ArrayList<String>();
+
+				for (FieldError err : result.getFieldErrors()) {
+					errors.add("Error en campo '" + err.getField() + "', " + err.getDefaultMessage());
+				}
+
+				response.put("Errores", errors);
+				status = HttpStatus.BAD_REQUEST;
+			} else {
+
+				personita = personaService.save(persona);
+				response.put("Nueva persona", personita);
+				response.put("Mensaje", "Cliente creado con exito!");
+				status = HttpStatus.OK;
+			}
+
+		} catch (Exception e) {
+
+			response.put("Mensaje", "Error interno");
+			response.put("Error", e.getMessage());
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+
+		return new ResponseEntity<Map<String, Object>>(response, status);
+	}
+
+	@PostMapping("/cuenta")
+	public ResponseEntity<?> CreateCuenta(@Valid @RequestBody Cuenta cuenta, BindingResult result) {
+
+		Map<String, Object> response = new HashMap<>();
+		Cuenta nuevaCuenta;
+		HttpStatus status;
+
+		try {
+
+			if (result.hasErrors()) {
+				List<String> errors = new ArrayList<String>();
+
+				for (FieldError err : result.getFieldErrors()) {
+					errors.add("Error en campo '" + err.getField() + "', " + err.getDefaultMessage());
+				}
+
+				response.put("Errores", errors);
+				status = HttpStatus.BAD_REQUEST;
+			} else {
+
+				Persona persona = personaService.findById(cuenta.getPersona().getCurp());
+				Promotor promotor = promotorService.findById(cuenta.getPromotor().getId());
+				Sucursal sucursal = sucursalService.findById(cuenta.getSucursal().getNumero());
+
+				cuenta.setPersona(persona);
+				cuenta.setSucursal(sucursal);
+				cuenta.setPromotor(promotor);
+
+				nuevaCuenta = cuentaService.insert(cuenta);
+				response.put("Nueva cuenta creada", nuevaCuenta);
+				response.put("Mensaje", "Cuenta creada con exito!");
+				status = HttpStatus.OK;
+			}
+
+		} catch (Exception e) {
+
+			response.put("Mensaje", "Error interno");
+			response.put("Error", e.getMessage());
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+
+		return new ResponseEntity<Map<String, Object>>(response, status);
+	}
+
+	@PostMapping("/domicilio")
+	public ResponseEntity<?> CreateDomicilio(@Valid @RequestBody Domicilio domicilio, BindingResult result) {
+
+		Map<String, Object> response = new HashMap<>();
+		HttpStatus status;
+
+		try {
+
+			if (result.hasErrors()) {
+				List<String> errors = new ArrayList<String>();
+
+				for (FieldError err : result.getFieldErrors()) {
+					errors.add("Error en campo '" + err.getField() + "', " + err.getDefaultMessage());
+				}
+
+				response.put("Errores", errors);
+				status = HttpStatus.BAD_REQUEST;
+			} else {
+
+				Persona persona = personaService.findById(domicilio.getPersona().getCurp());
+				domicilio.setPersona(persona);
+				CodigoPostal codigo = codigoService.findById(domicilio.getCodigopostal().getCodigo());
+				domicilio.setCodigopostal(codigo);
+
+				Domicilio nuevoDomicilio = domicilioService.save(domicilio);
+				response.put("Nuevo domicilio creado", nuevoDomicilio);
+				response.put("Mensaje", "Domicilio creado con exito!");
+				status = HttpStatus.OK;
+			}
+
+		} catch (Exception e) {
+
+			response.put("Mensaje", "Error interno");
+			response.put("Error", e.getMessage());
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+
+		return new ResponseEntity<Map<String, Object>>(response, status);
+	}
+
+	@PostMapping("/telefono")
+	public ResponseEntity<?> CreateTelefono(@Valid @RequestBody Telefono telefono, BindingResult result) {
+
+		Map<String, Object> response = new HashMap<>();
+		Telefono nuevoTelefono;
+		HttpStatus status;
+
+		try {
+
+			if (result.hasErrors()) {
+				List<String> errors = new ArrayList<String>();
+
+				for (FieldError err : result.getFieldErrors()) {
+					errors.add("Error en campo '" + err.getField() + "', " + err.getDefaultMessage());
+				}
+
+				response.put("Errores", errors);
+				status = HttpStatus.BAD_REQUEST;
+			} else {
+
+				Persona persona = personaService.findById(telefono.getPersona().getCurp());
+				telefono.setPersona(persona);
+
+				nuevoTelefono = telefonoService.save(telefono);
+				response.put("Nuevo telefono creado", nuevoTelefono);
+				response.put("Mensaje", "Telefono creado con exito!");
+				status = HttpStatus.OK;
+			}
+
+		} catch (Exception e) {
+
+			response.put("Mensaje", "Error interno");
+			response.put("Error", e.getMessage());
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+
+		return new ResponseEntity<Map<String, Object>>(response, status);
+	}
+
+	@GetMapping("/promotor/findById/{idOrName}")
+	public ResponseEntity<?> GetPromotor(@PathVariable String idOrName) {
+
+		ResponseEntity<?> response;
+		response = promotorService.findPromotor(idOrName);
+
+		return response;
+	}
+
+	@GetMapping("/cp/{codigo}")
+	public ResponseEntity<?> getCp(@PathVariable String codigo) {
+
+		Map<String, Object> response = new HashMap<>();
+		HttpStatus status;
+
+		try {
+
+			CodigoPostal myCodigo = codigoService.findById(codigo);
+
+			if (myCodigo == null) {
+
+				response.put("Mensaje", "Informacion no encontrada");
+				status = HttpStatus.NOT_FOUND;
+			} else {
+
+				List<Colonia> misColonias = coloniaService.findAllColonias(myCodigo.getCiudad().getNombre());
+				myCodigo.setListaDeColonias(misColonias);
+
+				response.put("Mensaje", "Informacion encontrada!");
+				response.put("Codigo Postal", myCodigo);
+				status = HttpStatus.OK;
+			}
+
+		} catch (Exception e) {
+
+			response.put("Mensaje", "Error interno");
+			response.put("Error", e.getMessage());
+			status = HttpStatus.INTERNAL_SERVER_ERROR;
+		}
+
+		return new ResponseEntity<Map<String, Object>>(response, status);
+	}
+}

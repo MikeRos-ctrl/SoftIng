@@ -1,0 +1,5 @@
+package com.ApiRest.entity;
+
+public class User {
+
+}
